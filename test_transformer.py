@@ -5,7 +5,7 @@ import sys
 # 1. Install required packages if missing
 def ensure_packages_installed() -> None:
     required = {
-        "weaviate-client": "weaviate",
+        "qdrant-client": "qdrant_client",
         "sentence-transformers": "sentence_transformers",
         "numpy": "numpy",
         "pandas": "pandas",
@@ -17,32 +17,25 @@ def ensure_packages_installed() -> None:
 
 ensure_packages_installed()
 
-import weaviate
-from weaviate.classes.config import Property, DataType, Configure
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
+from sentence_transformers import SentenceTransformer
 
-# 2. Connect to local Weaviate instance
-client = weaviate.connect_to_custom(
-    http_host="localhost",
-    http_port=8080,
-    http_secure=False,
+# 2. Connect to local Qdrant instance
+client = QdrantClient(url="http://localhost:6333")
+
+# 3. Load embedding model (client-side embeddings for Qdrant)
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+model = SentenceTransformer(model_name)
+embedding_dim = model.get_sentence_embedding_dimension()
+
+collection_name = "Document"
+
+# Recreate collection to keep the example deterministic
+client.recreate_collection(
+    collection_name=collection_name,
+    vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
 )
-
-# 3. Define schema for "Document" using text2vec-transformers
-# Note: Weaviate generates embeddings internally via the module, so we do not embed here.
-if client.collections.exists("Document"):
-    client.collections.delete("Document")
-
-client.collections.create(
-    name="Document",
-    vectorizer_config=Configure.Vectorizer.text2vec_transformers(),
-    properties=[
-        Property(name="title", data_type=DataType.TEXT),
-        Property(name="content", data_type=DataType.TEXT),
-        Property(name="tags", data_type=DataType.TEXT_ARRAY),
-    ],
-)
-
-collection = client.collections.get("Document")
 
 # 4. Insert sample documents with metadata
 documents = [
@@ -52,9 +45,9 @@ documents = [
         "tags": ["search", "hybrid", "overview"],
     },
     {
-        "title": "Weaviate and Transformers",
-        "content": "Weaviate can use text2vec-transformers to vectorize content automatically.",
-        "tags": ["weaviate", "transformers", "embeddings"],
+        "title": "Qdrant and Transformers",
+        "content": "Qdrant stores vectors created by transformer models for fast similarity search.",
+        "tags": ["qdrant", "transformers", "embeddings"],
     },
     {
         "title": "RAG Fundamentals",
@@ -73,25 +66,31 @@ documents = [
     },
 ]
 
-for doc in documents:
-    collection.data.insert(properties=doc)
+texts = [f"{d['title']}\n{d['content']}" for d in documents]
+vectors = model.encode(texts, normalize_embeddings=True)
+
+points = [
+    PointStruct(id=idx, vector=vector, payload=doc)
+    for idx, (vector, doc) in enumerate(zip(vectors, documents), start=1)
+]
+
+client.upsert(collection_name=collection_name, points=points)
 
 # 5. Hybrid search with alpha=0.5 and top 5 results
 query_text = "semantic keyword search with embeddings"
-results = collection.query.hybrid(
-    query=query_text,
-    alpha=0.5,
+query_vector = model.encode(query_text, normalize_embeddings=True)
+results = client.search(
+    collection_name=collection_name,
+    query_vector=query_vector,
     limit=5,
-    return_properties=["title", "content", "tags"],
+    with_payload=True,
 )
 
 # 6. Print search results
-for idx, obj in enumerate(results.objects, start=1):
-    props = obj.properties
+for idx, point in enumerate(results, start=1):
+    props = point.payload or {}
     print(f"Result {idx}")
     print("Title:", props.get("title"))
     print("Content:", props.get("content"))
     print("Tags:", props.get("tags"))
     print("-" * 40)
-
-client.close()
