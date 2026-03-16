@@ -2,7 +2,7 @@
 
 This repository contains two scripts:
 - `test_qwen.py` (Ollama + Qwen model)
-- `test_transformer.py` (Weaviate + text2vec-transformers)
+- `test_transformer.py` (Qdrant + sentence-transformers)
 
 Below are step-by-step setup commands for Windows PowerShell.
 
@@ -17,7 +17,7 @@ python -m venv .venv
 
 ```powershell
 python -m pip install --upgrade pip
-python -m pip install ollama weaviate-client sentence-transformers numpy pandas
+python -m pip install -r requirements.txt
 ```
 
 ## 3) Ollama setup (for `test_qwen.py`)
@@ -45,7 +45,7 @@ docker compose up -d
 Wait until Qdrant is healthy (optional but helpful):
 
 ```powershell
-curl http://localhost:6333/healthz
+curl -UseBasicParsing http://localhost:6333/healthz
 ```
 
 ## 5) Stop services

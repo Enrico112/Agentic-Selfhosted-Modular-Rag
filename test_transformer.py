@@ -1,30 +1,14 @@
 import importlib.util
 import subprocess
 import sys
-
-# 1. Install required packages if missing
-def ensure_packages_installed() -> None:
-    required = {
-        "qdrant-client": "qdrant_client",
-        "sentence-transformers": "sentence_transformers",
-        "numpy": "numpy",
-        "pandas": "pandas",
-    }
-    missing = [pkg for pkg, module in required.items() if importlib.util.find_spec(module) is None]
-    if missing:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", *missing])
-
-
-ensure_packages_installed()
-
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 
-# 2. Connect to local Qdrant instance
+# Connect to local Qdrant instance
 client = QdrantClient(url="http://localhost:6333")
 
-# 3. Load embedding model (client-side embeddings for Qdrant)
+# Load embedding model (client-side embeddings for Qdrant)
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
 model = SentenceTransformer(model_name)
 embedding_dim = model.get_sentence_embedding_dimension()
@@ -32,12 +16,14 @@ embedding_dim = model.get_sentence_embedding_dimension()
 collection_name = "Document"
 
 # Recreate collection to keep the example deterministic
-client.recreate_collection(
+if client.collection_exists(collection_name):
+    client.delete_collection(collection_name)
+client.create_collection(
     collection_name=collection_name,
     vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
 )
 
-# 4. Insert sample documents with metadata
+# Insert sample documents with metadata
 documents = [
     {
         "title": "Hybrid Search Basics",
@@ -76,18 +62,18 @@ points = [
 
 client.upsert(collection_name=collection_name, points=points)
 
-# 5. Hybrid search with alpha=0.5 and top 5 results
+# Hybrid search with alpha=0.5 and top 5 results
 query_text = "semantic keyword search with embeddings"
 query_vector = model.encode(query_text, normalize_embeddings=True)
-results = client.search(
+results = client.query_points(
     collection_name=collection_name,
-    query_vector=query_vector,
+    query=query_vector,
     limit=5,
     with_payload=True,
 )
 
-# 6. Print search results
-for idx, point in enumerate(results, start=1):
+# Print search results
+for idx, point in enumerate(results.points, start=1):
     props = point.payload or {}
     print(f"Result {idx}")
     print("Title:", props.get("title"))
