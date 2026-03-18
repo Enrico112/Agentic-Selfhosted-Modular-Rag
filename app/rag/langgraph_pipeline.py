@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Dict, List, TypedDict
 
 from langgraph.graph import END, StateGraph
@@ -11,7 +10,6 @@ from app.agents.retrieval_agent import run_retrieval
 from app.agents.router_agent import route_query
 from app.rag.pipeline import initialize_pipeline
 from app.utils.config import DEBUG, LOG_TRACE_RETRIEVAL
-from app.utils.langsmith_logger import LangSmithLogger
 from app.utils.logging import debug, info
 
 
@@ -67,7 +65,6 @@ def build_graph(resources: Dict[str, Any]):
 
 
 def run_query(query: str, resources: Dict[str, Any]) -> Dict[str, Any]:
-    logger = LangSmithLogger(project=os.getenv("LANGSMITH_PROJECT"))
     state: RagState = {
         "query": query,
         "route": "",
@@ -85,16 +82,6 @@ def run_query(query: str, resources: Dict[str, Any]) -> Dict[str, Any]:
             debug("BM25 Top", items=result["retrieval"].get("trace", {}).get("bm25_top", []))
             debug("Hybrid Top", items=result["retrieval"].get("trace", {}).get("hybrid_top", []))
 
-    logger.log_event("router", {"route": result["route"], "reason": result["route_reason"]})
-    logger.log_event(
-        "retrieval",
-        {
-            "retrieved": len(result.get("retrieval", {}).get("retrieved", [])),
-            "reranked": len(result.get("retrieval", {}).get("reranked", [])),
-            "trace": result.get("retrieval", {}).get("trace", {}),
-        },
-    )
-    logger.log_event("answer", {"sources": result.get("answer", {}).get("sources", [])})
     return result
 
 
