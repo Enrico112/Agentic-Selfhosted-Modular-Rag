@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 
 from transformers import AutoTokenizer
 
-from config import DEBUG
+from app.utils.config import DEBUG
 _TOKENIZER = None
 
 

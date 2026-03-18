@@ -4,7 +4,7 @@ import sys
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from markdown_chunker import chunk_markdown
+from app.ingestion.markdown_chunker import chunk_markdown
 
 
 def main() -> None:
