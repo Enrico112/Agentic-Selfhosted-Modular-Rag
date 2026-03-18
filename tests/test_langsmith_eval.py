@@ -16,8 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from dotenv import load_dotenv
 
 from app.llm.client import chat
-from app.rag.langgraph_pipeline import run_query
-from app.rag.pipeline import initialize_pipeline
+from app.rag.pipeline import initialize_pipeline, run_query
 from app.utils.config import DATA_DIR, LANGGRAPH_USE_LANGSMITH_API
 from app.utils.logging import info
 
