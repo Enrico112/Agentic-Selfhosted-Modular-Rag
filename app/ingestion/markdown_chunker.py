@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 
 from transformers import AutoTokenizer
 
-from app.utils.config import DEBUG
+from app.utils.config import LOG_LEVEL
 _TOKENIZER = None
 
 
@@ -214,7 +214,7 @@ def chunk_markdown(
             )
             chunk_index += 1
 
-    if (debug if debug is not None else DEBUG):
+    if (debug if debug is not None else LOG_LEVEL == "DEBUG"):
         print(f"[chunk_markdown] {file_path}: {len(chunks)} chunks")
         for chunk in chunks:
             meta = chunk["metadata"]

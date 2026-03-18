@@ -19,7 +19,7 @@ from app.llm.client import chat
 from app.rag.langgraph_pipeline import run_query
 from app.rag.pipeline import initialize_pipeline
 from app.utils.config import DATA_DIR, LANGGRAPH_USE_LANGSMITH_API
-from app.utils.logging import info, warn
+from app.utils.logging import info
 
 
 def _normalize_title(name: str) -> str:
@@ -129,12 +129,6 @@ def _aggregate(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def main() -> None:
     load_dotenv()
-    if not LANGGRAPH_USE_LANGSMITH_API:
-        os.environ["LANGSMITH_TRACING"] = "false"
-        os.environ["LANGSMITH_API_KEY"] = ""
-        warn("LANGGRAPH_USE_LANGSMITH_API is False. Running local-only traces.")
-    elif os.getenv("LANGSMITH_TRACING", "").strip().lower() not in {"1", "true", "yes", "on"}:
-        warn("LANGSMITH_TRACING is not enabled. LangSmith runs will not be captured.")
     resources = initialize_pipeline()
 
     data_dir = Path(DATA_DIR)

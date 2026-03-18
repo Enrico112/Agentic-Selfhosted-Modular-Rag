@@ -1,5 +1,3 @@
-DEBUG = True
-
 # Logging
 LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARN
 LOG_STRUCTURED = False

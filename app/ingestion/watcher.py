@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from app.ingestion.markdown_chunker import chunk_markdown
-from app.utils.config import DEBUG
 from app.utils.file_utils import detect_changes, save_state
 from app.utils.logging import info
 

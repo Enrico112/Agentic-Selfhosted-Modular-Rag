@@ -3,15 +3,13 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
-from app.utils.config import DEBUG, LOG_LEVEL, LOG_STRUCTURED
+from app.utils.config import LOG_LEVEL, LOG_STRUCTURED
 
 
 _LEVELS = {"DEBUG": 10, "INFO": 20, "WARN": 30}
 
 
 def _should_log(level: str) -> bool:
-    if not DEBUG:
-        return False
     return _LEVELS.get(level, 20) >= _LEVELS.get(LOG_LEVEL, 20)
 
 

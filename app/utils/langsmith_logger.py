@@ -6,8 +6,8 @@ from uuid import uuid4
 
 import os
 
-from app.utils.config import DEBUG, LOG_STRUCTURED
-from app.utils.logging import debug, info
+from app.utils.config import LOG_LEVEL, LOG_STRUCTURED
+from app.utils.logging import debug, info, warn
 
 try:
     from langsmith import Client
@@ -27,7 +27,7 @@ class LangSmithLogger:
             self.client = None
         self.project = project
         self.parent_run_id: Optional[str] = None
-        if DEBUG:
+        if LOG_LEVEL == "DEBUG":
             debug("LangSmith logger init", file=__file__, project=self.project, tracing=tracing)
 
     def start_trace(self, name: str, inputs: Dict[str, Any]) -> None:
@@ -35,7 +35,7 @@ class LangSmithLogger:
             return
         try:
             run_id = str(uuid4())
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 debug("LangSmith parent run id generated", run_id=run_id)
             self.client.create_run(
                 id=run_id,
@@ -46,10 +46,10 @@ class LangSmithLogger:
                 start_time=datetime.now(timezone.utc),
             )
             self.parent_run_id = run_id
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 debug("LangSmith parent run created", run_id=self.parent_run_id, name=name)
         except Exception as exc:
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 info(f"LangSmith start_trace failed: {exc}")
 
     def end_trace(self, outputs: Optional[Dict[str, Any]] = None) -> None:
@@ -61,14 +61,14 @@ class LangSmithLogger:
                 outputs=outputs or {},
                 end_time=datetime.now(timezone.utc),
             )
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 debug("LangSmith parent run closed", run_id=self.parent_run_id)
         except Exception as exc:
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 info(f"LangSmith end_trace failed: {exc}")
 
     def log_event(self, name: str, payload: Dict[str, Any]) -> None:
-        if DEBUG:
+        if LOG_LEVEL == "DEBUG":
             debug(f"LangSmith event: {name}", payload=payload)
         if not self.client:
             return
@@ -83,23 +83,33 @@ class LangSmithLogger:
                 parent_run_id=self.parent_run_id,
                 start_time=datetime.now(timezone.utc),
             )
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 debug("LangSmith child run created", run_id=run_id, name=name)
             if run_id:
                 self.client.update_run(
                     run_id,
                     end_time=datetime.now(timezone.utc),
                 )
-                if DEBUG:
+                if LOG_LEVEL == "DEBUG":
                     debug("LangSmith child run closed", run_id=run_id, name=name)
         except Exception as exc:
-            if DEBUG:
+            if LOG_LEVEL == "DEBUG":
                 info(f"LangSmith logging failed: {exc}")
 
 
 def _env_truthy(name: str) -> bool:
     value = os.getenv(name, "").strip().lower()
     return value in {"1", "true", "yes", "on"}
+
+
+def configure_langsmith_tracing(use_api: bool) -> None:
+    if not use_api:
+        os.environ["LANGSMITH_TRACING"] = "false"
+        os.environ["LANGSMITH_API_KEY"] = ""
+        info("LangSmith API disabled; writing local traces only.")
+        return
+    if not _env_truthy("LANGSMITH_TRACING"):
+        warn("LANGSMITH_TRACING is not enabled. LangSmith runs will not be captured.")
 
 
 def _extract_run_id(run: Any) -> Optional[str]:

@@ -4,7 +4,6 @@ from typing import Any, Dict, List, TypedDict
 from datetime import datetime, timezone
 from pathlib import Path
 import json
-import os
 
 from langgraph.graph import END, StateGraph
 from dotenv import load_dotenv
@@ -14,10 +13,10 @@ from app.agents.retrieval_agent import run_retrieval
 from app.agents.router_agent import route_query
 from app.rag.pipeline import initialize_pipeline
 from app.utils.config import (
-    DEBUG,
     LOG_TRACE_RETRIEVAL,
     LANGGRAPH_USE_LANGSMITH_API,
     LOCAL_TRACE_PATH,
+    LOG_LEVEL,
 )
 from app.utils.logging import debug, info
 
@@ -84,7 +83,7 @@ def run_query(query: str, resources: Dict[str, Any]) -> Dict[str, Any]:
     app = build_graph(resources)
     result = app.invoke(state)
 
-    if DEBUG:
+    if LOG_LEVEL == "DEBUG":
         info(f"Route: {result['route']} ({result['route_reason']})")
         if LOG_TRACE_RETRIEVAL and result.get("retrieval"):
             debug("Dense Top", items=result["retrieval"].get("trace", {}).get("dense_top", []))
@@ -115,10 +114,6 @@ def _write_local_trace(query: str, result: Dict[str, Any]) -> None:
 
 def main() -> None:
     load_dotenv()
-    if not LANGGRAPH_USE_LANGSMITH_API:
-        os.environ["LANGSMITH_TRACING"] = "false"
-        os.environ["LANGSMITH_API_KEY"] = ""
-        info("LangSmith API disabled; writing local traces only.")
     resources = initialize_pipeline()
     while True:
         query = input("Query: ").strip()

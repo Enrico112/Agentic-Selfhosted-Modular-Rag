@@ -20,7 +20,6 @@ from app.retrieval.hybrid import Document, filter_context, hybrid_retrieve_with_
 from app.retrieval.reranker import rerank
 from app.retrieval.sparse import build_bm25_index
 from app.utils.config import (
-    DEBUG,
     DATA_DIR,
     STATE_PATH,
     DENSE_ALPHA,
@@ -35,8 +34,11 @@ from app.utils.config import (
     LOG_TRACE_RETRIEVAL,
     SAVE_QUERY_HISTORY,
     QUERY_HISTORY_PATH,
+    LOG_LEVEL,
+    LANGGRAPH_USE_LANGSMITH_API,
 )
 from app.utils.logging import info, debug
+from app.utils.langsmith_logger import configure_langsmith_tracing
 
 DATA_DIR = Path(DATA_DIR)
 STATE_PATH = Path(STATE_PATH)
@@ -101,6 +103,7 @@ def initialize_pipeline() -> Dict[str, Any]:
 
     bm25, _ = build_bm25_index(documents)
 
+    configure_langsmith_tracing(LANGGRAPH_USE_LANGSMITH_API)
     info("Setup complete. Ready for chat.")
 
     return {
@@ -126,7 +129,7 @@ def rag_pipeline(query: str, resources: Dict[str, Any]) -> Dict[str, object]:
         dense_alpha=DENSE_ALPHA,
     )
 
-    if DEBUG:
+    if LOG_LEVEL == "DEBUG":
         print("Rewritten query:", rewritten_query)
         if LOG_TRACE_RETRIEVAL:
             debug("Dense Top", items=trace.get("dense_top", []))
@@ -139,7 +142,7 @@ def rag_pipeline(query: str, resources: Dict[str, Any]) -> Dict[str, object]:
 
     reranked = rerank(rewritten_query, retrieved[:RETRIEVE_K], k=RERANK_K, reranker=resources["reranker"])
 
-    if DEBUG:
+    if LOG_LEVEL == "DEBUG":
         print("\nTop reranked:")
         for doc in reranked[: TOPK_TRACE]:
             print(f"- score={doc.score:.4f} | {doc.metadata.get('file_path')}")
@@ -172,7 +175,7 @@ def rag_pipeline(query: str, resources: Dict[str, Any]) -> Dict[str, object]:
     prompt = build_prompt(context, rewritten_query)
     prompt_tokens = _count_tokens(prompt)
 
-    if DEBUG:
+    if LOG_LEVEL == "DEBUG":
         print("\nFinal context:\n", context)
         print("\nFinal prompt:\n", prompt)
         debug("Prompt stats", prompt_tokens=prompt_tokens)
