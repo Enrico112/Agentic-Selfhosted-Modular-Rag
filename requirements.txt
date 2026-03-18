@@ -1,5 +1,8 @@
 ollama
 qdrant-client
 sentence-transformers
+rank-bm25
 numpy
 pandas
+tqdm
+datasets

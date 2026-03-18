@@ -1,9 +1,10 @@
 # Setup Guide
 
-This repository contains three scripts (under `tests/`):
+This repository contains four scripts (under `tests/`):
 - `tests/test_reasoning_model.py` (Ollama + Qwen model)
 - `tests/test_vector_db.py` (Qdrant + sentence-transformers)
 - `tests/test_rag_chat.py` (Ollama + Qdrant + hybrid rerank)
+- `tests/test_chunk_markdown.py` (Markdown chunking over sample data)
 
 Below are step-by-step setup commands for Windows PowerShell.
 
@@ -61,7 +62,15 @@ Run the RAG chat script:
 python .\tests\test_rag_chat.py
 ```
 
-## 5) Stop services
+## 5) Markdown chunking test (optional)
+
+This uses `data/goodwiki_markdown_sample` as input (see `tests/sample_goodwiki.py`).
+
+```powershell
+python .\tests\test_chunk_markdown.py
+```
+
+## 6) Stop services
 
 ```powershell
 docker compose down
