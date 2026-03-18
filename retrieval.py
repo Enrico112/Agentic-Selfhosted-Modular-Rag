@@ -7,6 +7,7 @@ from qdrant_client.models import Distance, PointStruct, VectorParams
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
+from config import DEBUG
 
 class Document:
     def __init__(self, text: str, score: float, metadata: Dict[str, object]):
@@ -31,6 +32,8 @@ def index_documents(
     collection_name: str,
     embed_model: SentenceTransformer,
     documents: List[Dict[str, object]],
+    *,
+    batch_size: int = 256,
 ) -> None:
     embedding_dim = embed_model.get_sentence_embedding_dimension()
     if client.collection_exists(collection_name):
@@ -40,19 +43,32 @@ def index_documents(
         vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
     )
 
-    texts = [str(doc["text"]) for doc in documents]
-    vectors = embed_model.encode(texts, normalize_embeddings=True)
+    total = len(documents)
+    if total == 0:
+        return
 
-    points = []
-    for doc, vector in zip(documents, vectors):
-        payload = {
-            "id": doc["id"],
-            "text": doc["text"],
-            "metadata": doc.get("metadata", {}),
-        }
-        points.append(PointStruct(id=doc["id"], vector=vector, payload=payload))
+    if batch_size <= 0:
+        batch_size = 256
 
-    client.upsert(collection_name=collection_name, points=points)
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        batch_docs = documents[start:end]
+        texts = [str(doc["text"]) for doc in batch_docs]
+        vectors = embed_model.encode(texts, normalize_embeddings=True)
+
+        points = []
+        for doc, vector in zip(batch_docs, vectors):
+            payload = {
+                "id": doc["id"],
+                "text": doc["text"],
+                "metadata": doc.get("metadata", {}),
+            }
+            points.append(PointStruct(id=doc["id"], vector=vector, payload=payload))
+
+        client.upsert(collection_name=collection_name, points=points)
+
+        if DEBUG:
+            print(f"Upserted {end}/{total} points")
 
 
 def _normalize_scores(scores: Dict[int, float]) -> Dict[int, float]:
