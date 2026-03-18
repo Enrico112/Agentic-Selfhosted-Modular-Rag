@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 from app.ingestion.markdown_chunker import chunk_markdown
 from app.utils.config import DEBUG
 from app.utils.file_utils import detect_changes, save_state
-from app.utils.logging import log
+from app.utils.logging import info
 
 
 def load_documents_from_markdown(
@@ -15,7 +15,7 @@ def load_documents_from_markdown(
     overlap_ratio: float = 0.1,
 ) -> List[Dict[str, object]]:
     if not data_dir.exists():
-        log(f"Data directory not found: {data_dir}")
+        info(f"Data directory not found: {data_dir}")
         return []
 
     documents: List[Dict[str, object]] = []
@@ -41,7 +41,7 @@ def load_documents_from_markdown(
             )
             doc_id += 1
 
-    log(f"Loaded {len(documents)} chunks from {data_dir}")
+    info(f"Loaded {len(documents)} chunks from {data_dir}")
     return documents
 
 

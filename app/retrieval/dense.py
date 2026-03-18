@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 from sentence_transformers import SentenceTransformer
 
-from app.utils.logging import log
+from app.utils.logging import info
 
 
 def index_documents(
@@ -48,7 +48,7 @@ def index_documents(
             points.append(PointStruct(id=doc["id"], vector=vector, payload=payload))
 
         client.upsert(collection_name=collection_name, points=points)
-        log(f"Upserted {end}/{total} points")
+        info(f"Upserted {end}/{total} points")
 
 
 def dense_search(
