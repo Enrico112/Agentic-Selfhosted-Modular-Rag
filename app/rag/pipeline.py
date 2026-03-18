@@ -36,6 +36,9 @@ from app.utils.config import (
     QUERY_HISTORY_PATH,
     LOG_LEVEL,
     LANGGRAPH_USE_LANGSMITH_API,
+    EMBED_MODEL_NAME,
+    RERANKER_MODEL_NAME,
+    TOKENIZER_MODEL_NAME,
 )
 from app.utils.logging import info, debug
 from app.utils.langsmith_logger import configure_langsmith_tracing
@@ -50,7 +53,7 @@ _TOKENIZER = None
 def _get_tokenizer():
     global _TOKENIZER
     if _TOKENIZER is None:
-        _TOKENIZER = AutoTokenizer.from_pretrained("BAAI/bge-small-en-v1.5")
+        _TOKENIZER = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_NAME)
         # Only used for token counting/truncation, not model inference.
         _TOKENIZER.model_max_length = 100_000
     return _TOKENIZER
@@ -91,8 +94,8 @@ def initialize_pipeline() -> Dict[str, Any]:
     info("Loading models...")
 
     client = QdrantClient(url="http://localhost:6333")
-    embed_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
-    reranker = CrossEncoder("BAAI/bge-reranker-base")
+    embed_model = SentenceTransformer(EMBED_MODEL_NAME)
+    reranker = CrossEncoder(RERANKER_MODEL_NAME)
 
     if changed or not client.collection_exists("RagDocs"):
         info("Changes detected in data folder. Rebuilding index...")

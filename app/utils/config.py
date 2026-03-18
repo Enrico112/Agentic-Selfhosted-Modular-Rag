@@ -5,6 +5,12 @@ LOG_TRACE_RETRIEVAL = True
 LANGGRAPH_USE_LANGSMITH_API = False
 LOCAL_TRACE_PATH = "data/local_traces.jsonl"
 
+# Models
+EMBED_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+RERANKER_MODEL_NAME = "BAAI/bge-reranker-base"
+TOKENIZER_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+LLM_MODEL_NAME = "qwen2.5:7b"
+
 # Retrieval tuning
 DENSE_ALPHA = 0.7
 RETRIEVE_K = 20

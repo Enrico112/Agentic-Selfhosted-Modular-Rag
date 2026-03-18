@@ -2,6 +2,7 @@ from typing import List, Dict
 
 import ollama
 
+from app.utils.config import LLM_MODEL_NAME
 
 def chat(
     messages: List[Dict[str, str]],
@@ -10,7 +11,7 @@ def chat(
     num_predict: int = 512,
 ) -> str:
     response = ollama.chat(
-        model="qwen2.5:7b",
+        model=LLM_MODEL_NAME,
         messages=messages,
         options={
             "temperature": temperature,

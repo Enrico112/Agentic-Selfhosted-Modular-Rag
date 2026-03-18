@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 from app.llm.client import generate_answer
 from app.rag.prompt_manager import build_prompt
 from app.retrieval.hybrid import Document
-from app.utils.config import CONTEXT_MAX_TOKENS
+from app.utils.config import CONTEXT_MAX_TOKENS, TOKENIZER_MODEL_NAME
 
 _TOKENIZER = None
 
@@ -15,7 +15,7 @@ _TOKENIZER = None
 def _get_tokenizer():
     global _TOKENIZER
     if _TOKENIZER is None:
-        _TOKENIZER = AutoTokenizer.from_pretrained("BAAI/bge-small-en-v1.5")
+        _TOKENIZER = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_NAME)
         # Only used for token counting/truncation, not model inference.
         _TOKENIZER.model_max_length = 100_000
     return _TOKENIZER
