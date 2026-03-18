@@ -4,6 +4,8 @@ DEBUG = True
 LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARN
 LOG_STRUCTURED = False
 LOG_TRACE_RETRIEVAL = True
+LANGGRAPH_USE_LANGSMITH_API = False
+LOCAL_TRACE_PATH = "data/local_traces.jsonl"
 
 # Retrieval tuning
 DENSE_ALPHA = 0.7

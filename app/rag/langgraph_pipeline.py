@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, TypedDict
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+import os
 
 from langgraph.graph import END, StateGraph
 from dotenv import load_dotenv
@@ -9,7 +13,12 @@ from app.agents.answer_agent import answer_direct, answer_with_context
 from app.agents.retrieval_agent import run_retrieval
 from app.agents.router_agent import route_query
 from app.rag.pipeline import initialize_pipeline
-from app.utils.config import DEBUG, LOG_TRACE_RETRIEVAL
+from app.utils.config import (
+    DEBUG,
+    LOG_TRACE_RETRIEVAL,
+    LANGGRAPH_USE_LANGSMITH_API,
+    LOCAL_TRACE_PATH,
+)
 from app.utils.logging import debug, info
 
 
@@ -82,11 +91,34 @@ def run_query(query: str, resources: Dict[str, Any]) -> Dict[str, Any]:
             debug("BM25 Top", items=result["retrieval"].get("trace", {}).get("bm25_top", []))
             debug("Hybrid Top", items=result["retrieval"].get("trace", {}).get("hybrid_top", []))
 
+    if not LANGGRAPH_USE_LANGSMITH_API:
+        _write_local_trace(query, result)
     return result
+
+
+def _write_local_trace(query: str, result: Dict[str, Any]) -> None:
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "query": query,
+        "route": result.get("route"),
+        "route_reason": result.get("route_reason"),
+        "retrieved_count": len(result.get("retrieval", {}).get("retrieved", []) or []),
+        "reranked_count": len(result.get("retrieval", {}).get("reranked", []) or []),
+        "sources": result.get("answer", {}).get("sources", []),
+        "answer": result.get("answer", {}).get("answer", ""),
+    }
+    path = Path(LOCAL_TRACE_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def main() -> None:
     load_dotenv()
+    if not LANGGRAPH_USE_LANGSMITH_API:
+        os.environ["LANGSMITH_TRACING"] = "false"
+        os.environ["LANGSMITH_API_KEY"] = ""
+        info("LangSmith API disabled; writing local traces only.")
     resources = initialize_pipeline()
     while True:
         query = input("Query: ").strip()
