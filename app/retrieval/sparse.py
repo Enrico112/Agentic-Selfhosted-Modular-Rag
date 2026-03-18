@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Tuple
 
 from rank_bm25 import BM25Okapi
 
 
 def _tokenize(text: str) -> List[str]:
-    return [t.lower() for t in text.split() if t.strip()]
+    return [t.lower() for t in re.findall(r"[A-Za-z0-9]+", text)]
 
 
 def build_bm25_index(
