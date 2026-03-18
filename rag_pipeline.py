@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 import json
 from pathlib import Path
 
@@ -108,20 +108,19 @@ def load_documents_from_markdown(
     return documents
 
 
-def rag_pipeline(query: str) -> Dict[str, object]:
-    rewritten_query = rewrite_query(query)
+def initialize_pipeline() -> Dict[str, Any]:
+    if DEBUG:
+        print("Checking setup...")
 
     changed, state = _detect_changes(DATA_DIR)
     documents = load_documents_from_markdown(DATA_DIR)
 
     if not documents:
-        print("No markdown documents found. Aborting.")
-        return {
-            "query": query,
-            "rewritten_query": rewritten_query,
-            "documents": [],
-            "answer": "I don't know",
-        }
+        raise RuntimeError("No markdown documents found. Aborting.")
+
+    if DEBUG:
+        print("Loading models...")
+
     client = QdrantClient(url="http://localhost:6333")
     embed_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
     reranker = CrossEncoder("BAAI/bge-reranker-base")
@@ -134,16 +133,32 @@ def rag_pipeline(query: str) -> Dict[str, object]:
     else:
         if DEBUG:
             print("No data changes detected. Using existing index.")
+
     bm25, _ = build_bm25_index(documents)
+
+    if DEBUG:
+        print("Setup complete. Ready for chat.")
+
+    return {
+        "client": client,
+        "embed_model": embed_model,
+        "reranker": reranker,
+        "bm25": bm25,
+        "documents": documents,
+    }
+
+
+def rag_pipeline(query: str, resources: Dict[str, Any]) -> Dict[str, object]:
+    rewritten_query = rewrite_query(query)
 
     retrieved = hybrid_retrieve(
         rewritten_query,
         k=20,
-        client=client,
+        client=resources["client"],
         collection_name="RagDocs",
-        embed_model=embed_model,
-        bm25=bm25,
-        documents=documents,
+        embed_model=resources["embed_model"],
+        bm25=resources["bm25"],
+        documents=resources["documents"],
     )
 
     if DEBUG:
@@ -153,7 +168,7 @@ def rag_pipeline(query: str) -> Dict[str, object]:
             print(f"- score={doc.score:.4f} | {doc.metadata.get('file_path')}")
             print(f"  {doc.text[:120]}...")
 
-    reranked = rerank(rewritten_query, retrieved[:20], k=5, reranker=reranker)
+    reranked = rerank(rewritten_query, retrieved[:20], k=5, reranker=resources["reranker"])
 
     if DEBUG:
         print("\nTop reranked:")
@@ -179,7 +194,17 @@ def rag_pipeline(query: str) -> Dict[str, object]:
 
 
 if __name__ == "__main__":
-    user_query = input("Query: ").strip()
-    if user_query:
-        result = rag_pipeline(user_query)
+    try:
+        pipeline_resources = initialize_pipeline()
+    except RuntimeError as exc:
+        print(str(exc))
+        raise SystemExit(1)
+
+    while True:
+        user_query = input("Query: ").strip()
+        if not user_query:
+            continue
+        if user_query.lower() in {"exit", "quit"}:
+            break
+        result = rag_pipeline(user_query, pipeline_resources)
         print("\nAnswer:\n", result["answer"])
