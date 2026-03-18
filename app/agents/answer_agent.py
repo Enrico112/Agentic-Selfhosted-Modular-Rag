@@ -16,6 +16,8 @@ def _get_tokenizer():
     global _TOKENIZER
     if _TOKENIZER is None:
         _TOKENIZER = AutoTokenizer.from_pretrained("BAAI/bge-small-en-v1.5")
+        # Only used for token counting/truncation, not model inference.
+        _TOKENIZER.model_max_length = 100_000
     return _TOKENIZER
 
 
