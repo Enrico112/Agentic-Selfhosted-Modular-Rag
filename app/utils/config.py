@@ -1,10 +1,9 @@
 DEBUG = True
 
 # Logging
-LOG_LEVEL = "INFO"  # DEBUG, INFO, WARN
+LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARN
 LOG_STRUCTURED = False
 LOG_TRACE_RETRIEVAL = True
-LANGSMITH_PROJECT = "simple-rag-agent"
 
 # Retrieval tuning
 DENSE_ALPHA = 0.7

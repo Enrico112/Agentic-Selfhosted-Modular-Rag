@@ -5,6 +5,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import CrossEncoder, SentenceTransformer
 import json
 from transformers import AutoTokenizer
+from dotenv import load_dotenv
 
 from app.llm.client import generate_answer
 from app.rag.prompt_manager import build_prompt
@@ -196,6 +197,7 @@ def rag_pipeline(query: str, resources: Dict[str, Any]) -> Dict[str, object]:
 
 if __name__ == "__main__":
     try:
+        load_dotenv()
         pipeline_resources = initialize_pipeline()
     except RuntimeError as exc:
         print(str(exc))

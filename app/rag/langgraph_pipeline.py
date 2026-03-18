@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List, TypedDict
 
 from langgraph.graph import END, StateGraph
+from dotenv import load_dotenv
 
 from app.agents.answer_agent import answer_direct, answer_with_context
 from app.agents.retrieval_agent import run_retrieval
 from app.agents.router_agent import route_query
 from app.rag.pipeline import initialize_pipeline
-from app.utils.config import DEBUG, LANGSMITH_PROJECT, LOG_TRACE_RETRIEVAL
+from app.utils.config import DEBUG, LOG_TRACE_RETRIEVAL
 from app.utils.langsmith_logger import LangSmithLogger
 from app.utils.logging import debug, info
 
@@ -65,7 +67,7 @@ def build_graph(resources: Dict[str, Any]):
 
 
 def run_query(query: str, resources: Dict[str, Any]) -> Dict[str, Any]:
-    logger = LangSmithLogger(project=LANGSMITH_PROJECT)
+    logger = LangSmithLogger(project=os.getenv("LANGSMITH_PROJECT"))
     state: RagState = {
         "query": query,
         "route": "",
@@ -97,6 +99,7 @@ def run_query(query: str, resources: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main() -> None:
+    load_dotenv()
     resources = initialize_pipeline()
     while True:
         query = input("Query: ").strip()
