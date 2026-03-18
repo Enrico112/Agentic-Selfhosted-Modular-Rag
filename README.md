@@ -1,6 +1,21 @@
 # Agentic Self-Hosted Modular RAG
 
+**Overview**
 Local, self-hosted Retrieval-Augmented Generation (RAG) pipeline with modular components for ingestion, hybrid retrieval (dense + BM25), reranking, and LangGraph orchestration. Designed to run on a laptop while keeping a production-style structure.
+
+See `CHANGELOG.md` for recent changes and next steps.
+
+**Architecture (High Level)**
+```mermaid
+flowchart LR
+  A[Markdown Files] --> B[Chunking + Ingestion]
+  B --> C[Vector Index (Qdrant)]
+  B --> D[BM25 Index]
+  C --> E[Hybrid Retrieval]
+  D --> E
+  E --> F[Reranker]
+  F --> G[Prompt + LLM Answer]
+```
 
 **Highlights**
 - Hybrid retrieval: Qdrant vectors + BM25 score fusion
