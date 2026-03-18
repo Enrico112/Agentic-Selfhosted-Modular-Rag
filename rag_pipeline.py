@@ -1,9 +1,13 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
+import json
+from pathlib import Path
 
 from qdrant_client import QdrantClient
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
 from llm import chat, generate_answer
+from config import DEBUG
+from markdown_chunker import chunk_markdown
 from prompts import build_prompt
 from retrieval import (
     Document,
@@ -14,7 +18,8 @@ from retrieval import (
     rerank,
 )
 
-DEBUG = True
+DATA_DIR = Path("data/goodwiki_markdown_sample")
+STATE_PATH = Path("data/.rag_index_state.json")
 
 
 def rewrite_query(query: str) -> str:
@@ -37,61 +42,98 @@ def rewrite_query(query: str) -> str:
         return query
 
 
-def load_documents() -> List[Dict[str, object]]:
-    return [
-        {
-            "id": 1,
-            "text": (
-                "Arden Holt is the VP of Product at Asteria Labs. "
-                "She approved the Kitebeam roadmap on May 12, 2025 "
-                "with a target launch date of September 3, 2025."
-            ),
-            "metadata": {"file_path": "docs/asteria_memo.md"},
-        },
-        {
-            "id": 2,
-            "text": (
-                "BlueHaven Capital is a fictional venture firm founded in 2011 by Priya Arvan. "
-                "Its flagship fund is Tidal II with a size of $420M."
-            ),
-            "metadata": {"file_path": "docs/bluehaven_snapshot.md"},
-        },
-        {
-            "id": 3,
-            "text": (
-                "Novaline Health signed a 3-year contract on February 2, 2026 "
-                "for the PulseFrame analytics platform at $3.2M annually."
-            ),
-            "metadata": {"file_path": "docs/novaline_contract.md"},
-        },
-        {
-            "id": 4,
-            "text": (
-                "Nimbus Freight operates the Orchid logistics network. "
-                "Its main hub is in Tallinn and the backup hub is in Riga."
-            ),
-            "metadata": {"file_path": "docs/nimbus_ops.md"},
-        },
-        {
-            "id": 5,
-            "text": (
-                "SableWorks hired Dana Kirov as Head of People on August 8, 2024. "
-                "The internal HR system codename is Glassleaf."
-            ),
-            "metadata": {"file_path": "docs/sableworks_hr.md"},
-        },
-    ]
+def _file_signature(path: Path) -> Dict[str, object]:
+    stat = path.stat()
+    return {"mtime": stat.st_mtime, "size": stat.st_size}
+
+
+def _load_state() -> Dict[str, object]:
+    if not STATE_PATH.exists():
+        return {"files": {}}
+    try:
+        return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {"files": {}}
+
+
+def _save_state(state: Dict[str, object]) -> None:
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def _detect_changes(data_dir: Path) -> Tuple[bool, Dict[str, object]]:
+    state = _load_state()
+    current_files: Dict[str, object] = {}
+    for path in sorted(data_dir.glob("*.md")):
+        current_files[str(path)] = _file_signature(path)
+    changed = current_files != state.get("files", {})
+    return changed, {"files": current_files}
+
+
+def load_documents_from_markdown(
+    data_dir: Path,
+    max_tokens: int = 400,
+    overlap_ratio: float = 0.1,
+) -> List[Dict[str, object]]:
+    if not data_dir.exists():
+        if DEBUG:
+            print(f"Data directory not found: {data_dir}")
+        return []
+
+    documents: List[Dict[str, object]] = []
+    doc_id = 1
+    for md_file in sorted(data_dir.glob("*.md")):
+        chunks = chunk_markdown(
+            md_file, max_tokens=max_tokens, overlap_ratio=overlap_ratio, debug=False
+        )
+        for chunk in chunks:
+            meta = chunk["metadata"]
+            documents.append(
+                {
+                    "id": doc_id,
+                    "text": chunk["text"],
+                    "metadata": {
+                        "file_path": meta.get("file_path"),
+                        "chunk_index": meta.get("chunk_index"),
+                        "section": meta.get("section"),
+                        "tokens": meta.get("tokens"),
+                        "char_length": meta.get("char_length"),
+                    },
+                }
+            )
+            doc_id += 1
+
+    if DEBUG:
+        print(f"Loaded {len(documents)} chunks from {data_dir}")
+    return documents
 
 
 def rag_pipeline(query: str) -> Dict[str, object]:
     rewritten_query = rewrite_query(query)
 
-    documents = load_documents()
+    changed, state = _detect_changes(DATA_DIR)
+    documents = load_documents_from_markdown(DATA_DIR)
+
+    if not documents:
+        print("No markdown documents found. Aborting.")
+        return {
+            "query": query,
+            "rewritten_query": rewritten_query,
+            "documents": [],
+            "answer": "I don't know",
+        }
     client = QdrantClient(url="http://localhost:6333")
     embed_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
     reranker = CrossEncoder("BAAI/bge-reranker-base")
 
-    index_documents(client, "RagDocs", embed_model, documents)
+    if changed or not client.collection_exists("RagDocs"):
+        if DEBUG:
+            print("Changes detected in data folder. Rebuilding index...")
+        index_documents(client, "RagDocs", embed_model, documents)
+        _save_state(state)
+    else:
+        if DEBUG:
+            print("No data changes detected. Using existing index.")
     bm25, _ = build_bm25_index(documents)
 
     retrieved = hybrid_retrieve(
