@@ -92,9 +92,17 @@ def hybrid_retrieve_with_trace(
         fused_docs.append(Document(text=text, score=fused_score, metadata=metadata))
 
     fused_docs.sort(key=lambda d: d.score, reverse=True)
+    bm25_payloads = {
+        doc_id: {
+            "metadata": doc.get("metadata", {}),
+            "text": doc.get("text", ""),
+        }
+        for doc_id, doc in doc_map.items()
+    }
+
     trace = {
         "dense_top": _top_k_scores(dense_scores, dense_payloads, min(5, k)),
-        "bm25_top": _top_k_scores(bm25_score_map, None, min(5, k)),
+        "bm25_top": _top_k_scores(bm25_score_map, bm25_payloads, min(5, k)),
         "hybrid_top": [
             {
                 "score": doc.score,
