@@ -4,5 +4,7 @@ sentence-transformers
 rank-bm25
 numpy
 pandas
+langgraph
+langsmith
 tqdm
 datasets
