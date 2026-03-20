@@ -31,6 +31,9 @@ flowchart LR
 - Add UI
 - Add chat memory
 
+### 2026-03-20
+- Added integration and unit tests with pytest
+
 ### 2026-03-18
 - RAG agentic worflow (router + retrieval + answer nodes) as a structured LangGraph flow.
 - Markdown data (GoodWiki) for testing
@@ -42,7 +45,6 @@ flowchart LR
 - Setup LLM (qwen2.5:7b) and embedding (BAAI/bge-small-en-v1.5) models 
 - Set-up vector DB (Qdrant) Docker configuration for local run
 - Added LLM inference via Ollama for local run
-
 
 ## Project Structure
 - `app/` runtime code (ingestion, retrieval, RAG pipeline, agents)
