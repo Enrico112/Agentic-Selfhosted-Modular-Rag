@@ -5,13 +5,13 @@ Local, self-hosted Retrieval-Augmented Generation (RAG) pipeline with modular co
 ## Architecture
 ```mermaid
 flowchart LR
-  A[Markdown Files] --> B[Chunking + Ingestion]
-  B --> C[Vector Index (Qdrant)]
-  B --> D[BM25 Index]
-  C --> E[Hybrid Retrieval]
+  A["Markdown Files"] --> B["Chunking + Ingestion"]
+  B --> C["Vector Index (Qdrant)"]
+  B --> D["BM25 Index"]
+  C --> E["Hybrid Retrieval"]
   D --> E
-  E --> F[Reranker]
-  F --> G[Prompt + LLM Answer]
+  E --> F["Reranker"]
+  F --> G["Prompt + LLM Answer"]
 ```
 
 ## Highlights
@@ -127,6 +127,5 @@ docker compose down
 - `No markdown documents found`: verify `DATA_DIR` and that it contains `.md` files
 - `Qdrant connection error`: ensure `docker compose up -d` is running and port `6333` is reachable
 - `Ollama not responding`: make sure the Ollama service is running and the model is pulled
-
 
 
