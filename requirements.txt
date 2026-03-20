@@ -9,3 +9,4 @@ langsmith
 python-dotenv
 tqdm
 datasets
+pytest
