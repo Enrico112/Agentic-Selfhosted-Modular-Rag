@@ -24,15 +24,14 @@ flowchart LR
 ## Changelog
 
 ### Next Steps
-- Add real unit tests with pytest (router, chunker, retrieval scoring).
-- Add a lightweight CI workflow to run unit tests on push.
-- Add optional integration tests gated on Qdrant/Ollama availability.
-- Add ingestions of other file types (pdf, xlsx, ppx, word)
-- Add UI
-- Add chat memory
+- Ingestions of other file types (pdf, xlsx, ppx, word)
+- UI
+- Chat memory
+- CI workflow to run unit tests on push.
+- Integration tests gated on Qdrant/Ollama availability.
 
 ### 2026-03-20
-- Added integration and unit tests with pytest
+- Integration and unit tests with pytest
 
 ### 2026-03-18
 - RAG agentic worflow (router + retrieval + answer nodes) as a structured LangGraph flow.
@@ -43,7 +42,7 @@ flowchart LR
 
 ### 2026-03-16
 - Setup LLM (qwen2.5:7b) and embedding (BAAI/bge-small-en-v1.5) models 
-- Set-up vector DB (Qdrant) Docker configuration for local run
+- Setup vector DB (Qdrant) Docker configuration for local run
 - Added LLM inference via Ollama for local run
 
 ## Project Structure
