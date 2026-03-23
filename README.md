@@ -25,10 +25,12 @@ flowchart LR
 
 ### Next Steps
 - Ingestions of other file types (pdf, xlsx, ppx, word)
-- UI
 - Chat memory
 - CI workflow to run unit tests on push.
 - Integration tests gated on Qdrant/Ollama availability.
+
+### 2026-03-23
+- Added UI
 
 ### 2026-03-20
 - Integration and unit tests with pytest
