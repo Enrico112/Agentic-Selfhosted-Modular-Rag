@@ -10,3 +10,5 @@ python-dotenv
 tqdm
 datasets
 pytest
+fastapi
+uvicorn
