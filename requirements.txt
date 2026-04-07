@@ -1,0 +1,14 @@
+ollama
+qdrant-client
+sentence-transformers
+rank-bm25
+numpy
+pandas
+langgraph
+langsmith
+python-dotenv
+tqdm
+datasets
+pytest
+fastapi
+uvicorn
